@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: meta-fuse-csi-plugin
+  namespace: mfcp-system
+spec:
+  selector:
+    matchLabels:
+      k8s-app: meta-fuse-csi-plugin
+  template:
+    metadata:
+      annotations:
+        seccomp.security.alpha.kubernetes.io/pod: runtime/default
+      labels:
+        k8s-app: meta-fuse-csi-plugin
+    spec:
+      containers:
+      - args:
+        - --v=5
+        - --endpoint=unix:/csi/csi.sock
+        - --nodeid=$(KUBE_NODE_NAME)
+        env:
+        - name: KUBE_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        image: ghcr.io/pfnet-research/meta-fuse-csi-plugin/meta-fuse-csi-plugin:latest
+        imagePullPolicy: IfNotPresent
+        name: meta-fuse-csi-plugin
+        resources:
+          limits:
+            cpu: 200m
+            memory: 200Mi
+          requests:
+            cpu: 5m
+            memory: 10Mi
+        securityContext:
+          privileged: true
+          readOnlyRootFilesystem: true
+        volumeMounts:
+        - mountPath: /var/lib/kubelet/pods
+          mountPropagation: Bidirectional
+          name: kubelet-dir
+        - mountPath: /csi
+          name: socket-dir
+      - args:
+        - --v=5
+        - --csi-address=/csi/csi.sock
+        - --kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)
+        env:
+        - name: DRIVER_REG_SOCK_PATH
+          value: /var/lib/kubelet/plugins/meta-fuse-csi-plugin.csi.storage.pfn.io/csi.sock
+        image: registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.8.0
+        imagePullPolicy: Always
+        name: csi-driver-registrar
+        resources:
+          limits:
+            cpu: 50m
+            memory: 100Mi
+          requests:
+            cpu: 10m
+            memory: 10Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - all
+          readOnlyRootFilesystem: true
+        volumeMounts:
+        - mountPath: /csi
+          name: socket-dir
+        - mountPath: /registration
+          name: registration-dir
+      nodeSelector:
+        kubernetes.io/os: linux
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      tolerations:
+      - operator: Exists
+      volumes:
+      - hostPath:
+          path: /var/lib/kubelet/plugins_registry/
+          type: Directory
+        name: registration-dir
+      - hostPath:
+          path: /var/lib/kubelet/pods/
+          type: Directory
+        name: kubelet-dir
+      - hostPath:
+          path: /var/lib/kubelet/plugins/meta-fuse-csi-plugin.csi.storage.pfn.io/
+          type: DirectoryOrCreate
+        name: socket-dir
+  updateStrategy:
+    rollingUpdate:
+      maxUnavailable: 10%
+    type: RollingUpdate

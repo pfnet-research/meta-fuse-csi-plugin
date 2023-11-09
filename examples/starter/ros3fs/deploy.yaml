@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mfcp-example-starter-ros3fs
+  namespace: default
+spec:
+  terminationGracePeriodSeconds: 10
+  containers:
+  - name: minio
+    image: quay.io/minio/minio:latest
+    command: ["/bin/bash"]
+    args: ["-c", "minio server /data --console-address :9090"]
+  - name: starter
+    image: ghcr.io/pfnet-research/meta-fuse-csi-plugin/mfcp-example-starter-ros3fs:latest
+    imagePullPolicy: IfNotPresent
+    command: ["/bin/bash"]
+    args: ["-c", "./configure_minio.sh && /mfcp-bin/fuse-starter --fd-passing-socket-path /fuse-fd-passing/fuse-csi-ephemeral.sock -- /ros3fs /dev/fd/3 --endpoint=http://localhost:9000 --bucket_name=test-bucket/ --cache_dir=/ro3fs-temp -f"]
+    env:
+    - name: AWS_ACCESS_KEY_ID
+      value: "minioadmin"
+    - name: AWS_SECRET_ACCESS_KEY
+      value: "minioadmin"
+    volumeMounts:
+    - name: fuse-fd-passing
+      mountPath: /fuse-fd-passing
+    - name: ros3fs-temp
+      mountPath: /ros3fs-temp
+  - image: busybox
+    name: busybox
+    command: ["sleep"]
+    args: ["infinity"]
+    volumeMounts:
+    - name: fuse-csi-ephemeral
+      mountPath: /data
+      readOnly: true
+      mountPropagation: HostToContainer # TODO: need to validate in csi driver?
+  volumes:
+  - name: fuse-fd-passing
+    emptyDir: {}
+  - name: ros3fs-temp
+    emptyDir: {}
+  - name: fuse-csi-ephemeral
+    csi:
+      driver: meta-fuse-csi-plugin.csi.storage.pfn.io
+      readOnly: true
+      volumeAttributes:
+        fdPassingEmptyDirName: fuse-fd-passing
+        fdPassingSocketName: fuse-csi-ephemeral.sock

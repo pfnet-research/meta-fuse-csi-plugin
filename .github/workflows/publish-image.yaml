@@ -1,0 +1,29 @@
+name: "Publish Container Image"
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish-image:
+    runs-on: ubuntu-latest
+    env:
+      STAGINGVERSION: ${{ github.ref_name }}
+      PUBLISH_IMAGE: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v1
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Expose GitHub Runtime
+        uses: crazy-max/ghaction-github-runtime@v2
+        # buildkit requires $ACTIONS_CACHE_URL and $ACTIONS_RUNTIME_TOKEN for GHA build cache
+      - name: publish image
+        run: |
+          make build-driver
+          make build-examples

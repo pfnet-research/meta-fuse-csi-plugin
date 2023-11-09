@@ -1,0 +1,74 @@
+FROM golang:1.20.7 as fuse-starter-builder
+
+WORKDIR /meta-fuse-csi-plugin
+ADD . .
+RUN make fuse-starter BINDIR=/bin
+
+FROM ubuntu:22.04
+
+RUN apt update && apt upgrade -y
+RUN apt install -y ca-certificates wget libfuse2 fuse3
+
+# prepare for MinIO
+RUN wget https://dl.min.io/client/mc/release/linux-amd64/mc -O /usr/bin/mc && chmod +x /usr/bin/mc
+
+COPY <<EOF /test.txt
+This is a test file for minio
+EOF
+
+COPY <<EOF /configure_minio.sh
+#!/bin/bash
+set -eux
+/usr/bin/mc alias set k8s-minio-dev http://localhost:9000 minioadmin minioadmin
+/usr/bin/mc mb k8s-minio-dev/test-bucket
+/usr/bin/mc cp /test.txt k8s-minio-dev/test-bucket
+EOF
+RUN chmod +x /configure_minio.sh
+
+# install sshfs
+RUN apt install -y sshfs
+
+# thanks to https://docs.docker.jp/engine/examples/running_ssh_service.html
+RUN apt install -y openssh-server
+RUN mkdir /var/run/sshd
+RUN echo 'root:screencast' | chpasswd
+RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+
+# SSH login fix. Otherwise user is kicked off after login
+RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
+
+ENV NOTVISIBLE "in users profile"
+RUN echo "export VISIBLE=now" >> /etc/profile
+RUN ssh-keygen -f /root/.ssh/example -P ""
+RUN cat /root/.ssh/example.pub > /root/.ssh/authorized_keys
+
+COPY <<EOF /root/.ssh/config
+Host *
+    StrictHostKeyChecking no
+
+Host localhost
+    User root
+    IdentityFile /root/.ssh/example
+EOF
+
+RUN mkdir /root/sshfs-example
+RUN echo "This file is an example for sshfs" > /root/sshfs-example/test.txt
+
+COPY <<EOF /entrypoint.sh
+#!/bin/bash
+
+/usr/sbin/sshd -D &
+sleep 1
+
+/mfcp-bin/fuse-starter --fd-passing-socket-path /fuse-fd-passing/fuse-csi-ephemeral.sock -- /usr/bin/sshfs root@localhost:/root/sshfs-example /dev/fd/3 -f &
+
+wait -n
+exit $?
+EOF
+
+RUN chmod +x /entrypoint.sh
+
+RUN mkdir /mfcp-bin
+COPY --from=fuse-starter-builder /bin/fuse-starter /mfcp-bin/fuse-starter
+
+CMD ["/entrypoint.sh"]

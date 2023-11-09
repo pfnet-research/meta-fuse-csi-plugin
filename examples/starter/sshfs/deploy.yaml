@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mfcp-example-starter-sshfs
+  namespace: default
+spec:
+  terminationGracePeriodSeconds: 10
+  containers:
+  - name: starter
+    image: ghcr.io/pfnet-research/meta-fuse-csi-plugin/mfcp-example-starter-sshfs:latest
+    imagePullPolicy: IfNotPresent
+    volumeMounts:
+    - name: fuse-fd-passing
+      mountPath: /fuse-fd-passing
+  - image: busybox
+    name: busybox
+    command: ["sleep"]
+    args: ["infinity"]
+    volumeMounts:
+    - name: fuse-csi-ephemeral
+      mountPath: /data
+      readOnly: true
+      mountPropagation: HostToContainer # TODO: need to validate in csi driver?
+  volumes:
+  - name: fuse-fd-passing
+    emptyDir: {}
+  - name: fuse-csi-ephemeral
+    csi:
+      driver: meta-fuse-csi-plugin.csi.storage.pfn.io
+      readOnly: true
+      volumeAttributes:
+        fdPassingEmptyDirName: fuse-fd-passing
+        fdPassingSocketName: fuse-csi-ephemeral.sock
