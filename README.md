@@ -12,7 +12,7 @@ This brings us better security and more usability with object storages.
 <img src="./assets/demo.gif" />
 </p>
 
-For more details, please refer to our blog (English, Japanese)
+For more details, please refer to our blog ([English](https://tech.preferred.jp/en/blog/meta-fuse-csi-plugin/), [Japanese](https://tech.preferred.jp/ja/blog/meta-fuse-csi-plugin/))
 
 ## Current support status
 Currently, meta-fuse-csi-plugin supports below FUSE implementations.
@@ -164,7 +164,7 @@ fusermount3-proxy behaves as fusermount3 and it passthrough mount operations to 
 <img src="./assets/inside-fusermount3-proxy.png" width=80% />
 </p>
 
-For more details, please refer to our blog (English, Japanese)
+For more details, please refer to our blog ([English](https://tech.preferred.jp/en/blog/meta-fuse-csi-plugin/), [Japanese](https://tech.preferred.jp/ja/blog/meta-fuse-csi-plugin/))
 
 ## Acknowledgement
 The driver implementation is forked from [gcs-fuse-csi-driver](https://github.com/GoogleCloudPlatform/gcs-fuse-csi-driver).
