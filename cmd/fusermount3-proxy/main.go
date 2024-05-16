@@ -64,11 +64,11 @@ func main() {
 	}
 
 	if *optVersion {
-		fmt.Printf("fusermount3-dummy version %v (BuildDate %v)\n", version, builddate)
+		fmt.Printf("fusermount3-proxy version %v (BuildDate %v)\n", version, builddate)
 		os.Exit(0)
 	}
 
-	klog.Infof("Running meta-fuse-csi-plugin fusermount3-dummy version %v (BuildDate %v)", version, builddate)
+	klog.Infof("Running meta-fuse-csi-plugin fusermount3-proxy version %v (BuildDate %v)", version, builddate)
 
 	if *optUnmount {
 		klog.Warning("'unmount' is not supported.")
@@ -85,7 +85,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	// fd-passing socket between fusermount3-dummy and csi-driver is passed as env var
+	// fd-passing socket between fusermount3-proxy and csi-driver is passed as env var
 	fdPassingSocketPath := os.Getenv(ENV_FUSERMOUNT3PROXY_FDPASSING_SOCKPATH)
 	if fdPassingSocketPath == "" {
 		klog.Errorf("environment variable %q is not specified.", ENV_FUSERMOUNT3PROXY_FDPASSING_SOCKPATH)
@@ -137,5 +137,5 @@ func main() {
 		os.Exit(1)
 	}
 	klog.Infof("sent fd for /dev/fuse via commFd %d", commFd)
-	klog.Info("exiting fusermount3-dummy...")
+	klog.Info("exiting fusermount3-proxy...")
 }
