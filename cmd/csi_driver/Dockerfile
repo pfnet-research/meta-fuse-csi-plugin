@@ -15,7 +15,7 @@
 # limitations under the License.
 
 # Build driver go binary
-FROM golang:1.20.7 as driver-builder
+FROM golang:1.20.7 AS driver-builder
 
 ARG STAGINGVERSION
 
@@ -24,19 +24,23 @@ ADD . .
 RUN make driver BINDIR=/bin
 
 # Start from Kubernetes Debian base.
-FROM gke.gcr.io/debian-base:bullseye-v1.4.3-gke.5 as debian
+FROM gke.gcr.io/debian-base:bullseye-v1.4.3-gke.5 AS debian
 # Install necessary dependencies
 RUN clean-install mount bash
 
 # go/gke-releasing-policies#base-images
 # We use `gcr.io/distroless/base` because it includes glibc.
-FROM gcr.io/distroless/base-debian11 as distroless-base
+FROM gcr.io/distroless/base-debian11 AS distroless-base
 
 # The distroless amd64 image has a target triplet of x86_64
 FROM distroless-base AS distroless-amd64
-ENV LIB_DIR_PREFIX x86_64
+ENV LIB_DIR_PREFIX=x86_64
 
-FROM distroless-$TARGETARCH as output-image
+# The distroless arm64 image has a target triplet of aarch64
+FROM distroless-base AS distroless-arm64
+ENV LIB_DIR_PREFIX=aarch64
+
+FROM distroless-$TARGETARCH AS output-image
 
 # Copy the mount/umount binaries
 COPY --from=debian /bin/mount /bin/mount
@@ -50,7 +54,7 @@ COPY --from=debian /usr/lib/${LIB_DIR_PREFIX}-linux-gnu/libblkid.so.1 \
                    /usr/lib/${LIB_DIR_PREFIX}-linux-gnu/libpcre2-8.so.0 /usr/lib/${LIB_DIR_PREFIX}-linux-gnu/
 
 # Build stage used for validation of the output-image
-FROM output-image as validation-image
+FROM output-image AS validation-image
 COPY --from=debian /lib/${LIB_DIR_PREFIX}-linux-gnu/libtinfo.so.6 \
                    /lib/${LIB_DIR_PREFIX}-linux-gnu/libpcre.so.3 /lib/${LIB_DIR_PREFIX}-linux-gnu/
 COPY --from=debian /bin/bash /bin/bash
