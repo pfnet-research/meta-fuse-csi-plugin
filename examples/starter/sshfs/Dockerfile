@@ -5,6 +5,7 @@ ADD . .
 RUN make fuse-starter BINDIR=/bin
 
 FROM ubuntu:22.04
+ARG TARGETARCH
 
 RUN apt update && apt upgrade -y
 RUN apt install -y ca-certificates wget libfuse2 fuse3

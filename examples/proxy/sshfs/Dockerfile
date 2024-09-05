@@ -5,6 +5,7 @@ ADD . .
 RUN make fusermount3-proxy BINDIR=/bin
 
 FROM ubuntu:22.04
+ARG TARGETARCH
 
 RUN apt update && apt upgrade -y
 RUN apt install -y ca-certificates wget libfuse2 fuse3
