@@ -13,15 +13,16 @@ function wait_for_fuse_mounted() {
 }
 
 MANIFEST_DIR=$1 # path to example manifest
-POD_NAME=$2
-PROVIDER_CONTAINER=$3
-PROVIDED_FILENAME=$4
-MOUNTED_CONTAINER=$5
-MOUNTED_FILENAME=$6
+MAFNIFEST_FILENAME=$2
+POD_NAME=$3
+PROVIDER_CONTAINER=$4
+PROVIDED_FILENAME=$5
+MOUNTED_CONTAINER=$6
+MOUNTED_FILENAME=$7
 
 clean_up () {
     ARG=$?
-    kubectl delete -f ./deploy.yaml
+    kubectl delete -f ./${MAFNIFEST_FILENAME}
     exit $ARG
 }
 trap clean_up EXIT
@@ -30,7 +31,7 @@ cd $MANIFEST_DIR
 
 # Start to check the pod
 echo "Checking Pod \"$POD_NAME\"..."
-kubectl apply -f ./deploy.yaml
+kubectl apply -f ./${MAFNIFEST_FILENAME}
 
 # Waiting pod becomes ready
 wait_for_pod_becom_ready $POD_NAME

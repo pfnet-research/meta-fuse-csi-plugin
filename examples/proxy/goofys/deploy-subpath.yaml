@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mfcp-example-proxy-goofys
+  namespace: default
+spec:
+  terminationGracePeriodSeconds: 10
+  initContainers:
+  - name: minio
+    restartPolicy: Always
+    image: quay.io/minio/minio:latest
+    command: ["/bin/bash"]
+    args: ["-c", "minio server /data --console-address :9090"]
+  - name: starter
+    restartPolicy: Always
+    image: ghcr.io/pfnet-research/meta-fuse-csi-plugin/mfcp-example-proxy-goofys:latest
+    imagePullPolicy: IfNotPresent
+    command: ["/bin/bash"]
+    args: ["-c", "./configure_minio.sh && /goofys --endpoint http://localhost:9000 -f test-bucket /tmp"]
+    env:
+    - name: FUSERMOUNT3PROXY_FDPASSING_SOCKPATH
+      value: "/fusermount3-proxy/fuse-csi-ephemeral.sock"
+    - name: AWS_ACCESS_KEY_ID
+      value: "minioadmin"
+    - name: AWS_SECRET_ACCESS_KEY
+      value: "minioadmin"
+    volumeMounts:
+    - name: fuse-fd-passing
+      mountPath: /fusermount3-proxy
+    - name: fuse-csi-ephemeral
+      mountPath: /data
+      readOnly: true
+      mountPropagation: HostToContainer
+    startupProbe:
+      exec:
+        command: ['sh', '-c', 'mount | grep /data | grep fuse']
+      failureThreshold: 300
+      periodSeconds: 1
+  containers:
+  - image: busybox
+    name: busybox
+    command: ["sleep"]
+    args: ["infinity"]
+    volumeMounts:
+    - name: fuse-csi-ephemeral
+      mountPath: /data
+      readOnly: true
+      mountPropagation: HostToContainer
+    - name: fuse-csi-ephemeral
+      mountPath: /data-subpath
+      readOnly: true
+      subPath: subdir
+      mountPropagation: HostToContainer
+  volumes:
+  - name: fuse-fd-passing
+    emptyDir: {}
+  - name: fuse-csi-ephemeral
+    csi:
+      driver: meta-fuse-csi-plugin.csi.storage.pfn.io
+      readOnly: true
+      volumeAttributes:
+        fdPassingEmptyDirName: fuse-fd-passing
+        fdPassingSocketName: fuse-csi-ephemeral.sock

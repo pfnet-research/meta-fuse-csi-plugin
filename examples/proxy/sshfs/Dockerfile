@@ -36,8 +36,9 @@ Host localhost
     IdentityFile /root/.ssh/example
 EOF
 
-RUN mkdir /root/sshfs-example
-RUN echo "This file is an example for sshfs" > /root/sshfs-example/test.txt
+RUN mkdir -p /root/sshfs-example/subdir
+
+RUN echo "This file is an example for sshfs" > /root/sshfs-example/subdir/test.txt
 
 COPY <<EOF /entrypoint.sh
 #!/bin/bash
