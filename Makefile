@@ -130,23 +130,32 @@ push-examples: $(PUSH_EXAMPLES)
 
 define test-example-template
 ifneq ("$(EXAMPLE_TESTS)", "")
-EXAMPLE_TESTS += test-example-$(1)-$(2)
+EXAMPLE_TESTS += test-example-$(1)-$(2)-$(subst .,-,$(3))
 else
-EXAMPLE_TESTS := test-example-$(1)-$(2)
+EXAMPLE_TESTS := test-example-$(1)-$(2)-$(subst .,-,$(3))
 endif
 
 .PHONY: test-example-$1-$2
-test-example-$(1)-$(2):
-	./examples/check.sh ./$1/$2 mfcp-example-$1-$2 $3 $4 $5 $6
+test-example-$(1)-$(2)-$(subst .,-,$(3)):
+	./examples/check.sh ./$1/$2 $3 mfcp-example-$1-$2 $4 $5 $6 $7
 endef
 
-$(eval $(call test-example-template,proxy,mountpoint-s3,starter,/test.txt,busybox,/data/test.txt))
-$(eval $(call test-example-template,proxy,goofys,starter,/test.txt,busybox,/data/test.txt))
-$(eval $(call test-example-template,proxy,s3fs,starter,/test.txt,busybox,/data/test.txt))
-$(eval $(call test-example-template,proxy,ros3fs,starter,/test.txt,busybox,/data/test.txt))
-$(eval $(call test-example-template,proxy,sshfs,starter,/root/sshfs-example/test.txt,busybox,/data/test.txt))
-$(eval $(call test-example-template,starter,ros3fs,starter,/test.txt,busybox,/data/test.txt))
-$(eval $(call test-example-template,starter,sshfs,starter,/root/sshfs-example/test.txt,busybox,/data/test.txt))
+$(eval $(call test-example-template,proxy,mountpoint-s3,deploy.yaml,starter,/test.txt,busybox,/data/subdir/test.txt))
+$(eval $(call test-example-template,proxy,goofys,deploy.yaml,starter,/test.txt,busybox,/data/subdir/test.txt))
+$(eval $(call test-example-template,proxy,s3fs,deploy.yaml,starter,/test.txt,busybox,/data/subdir/test.txt))
+$(eval $(call test-example-template,proxy,ros3fs,deploy.yaml,starter,/test.txt,busybox,/data/subdir/test.txt))
+$(eval $(call test-example-template,proxy,sshfs,deploy.yaml,starter,/root/sshfs-example/subdir/test.txt,busybox,/data/subdir/test.txt))
+$(eval $(call test-example-template,starter,ros3fs,deploy.yaml,starter,/test.txt,busybox,/data/subdir/test.txt))
+$(eval $(call test-example-template,starter,sshfs,deploy.yaml,starter,/root/sshfs-example/subdir/test.txt,busybox,/data/subdir/test.txt))
+ifdef TEST_SUBPATH
+$(eval $(call test-example-template,proxy,mountpoint-s3,deploy-subpath.yaml,starter,/test.txt,busybox,/data-subpath/test.txt))
+$(eval $(call test-example-template,proxy,goofys,deploy-subpath.yaml,starter,/test.txt,busybox,/data-subpath/test.txt))
+$(eval $(call test-example-template,proxy,s3fs,deploy-subpath.yaml,starter,/test.txt,busybox,/data-subpath/test.txt))
+$(eval $(call test-example-template,proxy,ros3fs,deploy-subpath.yaml,starter,/test.txt,busybox,/data-subpath/test.txt))
+$(eval $(call test-example-template,proxy,sshfs,deploy-subpath.yaml,starter,/root/sshfs-example/subdir/test.txt,busybox,/data-subpath/test.txt))
+$(eval $(call test-example-template,starter,ros3fs,deploy-subpath.yaml,starter,/test.txt,busybox,/data-subpath/test.txt))
+$(eval $(call test-example-template,starter,sshfs,deploy-subpath.yaml,starter,/root/sshfs-example/subdir/test.txt,busybox,/data-subpath/test.txt))
+endif
 
 .PHONY: test-examples
 test-examples: $(EXAMPLE_TESTS)

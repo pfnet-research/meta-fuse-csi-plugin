@@ -5,8 +5,8 @@ ADD . .
 RUN make fusermount3-proxy BINDIR=/bin
 
 FROM ubuntu:22.04
-
 ARG TARGETARCH
+
 RUN apt update && apt upgrade -y
 RUN apt install -y ca-certificates wget libfuse2 fuse3
 
@@ -22,7 +22,7 @@ COPY <<EOF /configure_minio.sh
 set -eux
 /usr/bin/mc alias set k8s-minio-dev http://localhost:9000 minioadmin minioadmin
 /usr/bin/mc mb k8s-minio-dev/test-bucket
-/usr/bin/mc cp /test.txt k8s-minio-dev/test-bucket
+/usr/bin/mc cp /test.txt k8s-minio-dev/test-bucket/subdir/
 EOF
 RUN chmod +x /configure_minio.sh
 

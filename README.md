@@ -96,22 +96,36 @@ pod "mfcp-example-proxy-mountpoint-s3" deleted
 ```
 
 ## NOTICE
+
+### fuse volume is mounted lazily
+
 meta-fuse-csi-plugin mounts FUSE implementations after the container started.
 Some applications may read the directory before mount.
-To avoid such race condition, please wait for the FUSE impl is mounted.
-`examples/proxy/mountpoint-s3/deploy.yaml` and `examples/check.sh` do such delaying.
-```yaml
-  - image: busybox
-    name: busybox
-    command: ["/bin/ash"]
-    args: ["-c", "while [[ ! \"$(/bin/mount | grep fuse)\" ]]; do echo \"waiting for mount\" && sleep 1; done; sleep infinity"]
-```
-or
-```bash
-function wait_for_fuse_mounted() {
-    while [[ ! $(kubectl exec $1 -c $2 -- /bin/mount | grep fuse) ]]; do echo "waiting for mount" && sleep 1; done
-}
-```
+
+To avoid such race condition, there are two solutions.
+
+1. Wait for the FUSE impl is mounted. `examples/proxy/mountpoint-s3/deploy.yaml` and `examples/check.sh` do such delaying.
+  ```yaml
+    - image: busybox
+      name: busybox
+      command: ["/bin/ash"]
+      args: ["-c", "while [[ ! \"$(/bin/mount | grep fuse)\" ]]; do echo \"waiting for mount\" && sleep 1; done; sleep infinity"]
+  ```
+  or
+  ```bash
+  function wait_for_fuse_mounted() {
+      while [[ ! $(kubectl exec $1 -c $2 -- /bin/mount | grep fuse) ]]; do echo "waiting for mount" && sleep 1; done
+  }
+  ```
+1. Use [sidecar](https://kubernetes.io/docs/concepts/workloads/pods/sidecar-containers/) container, a.k.a restartable init container (enabled by default since Kubernetes v1.30).
+   This can guarantees app containers can see the volume contents since the beggining. See `examples/proxy/mountpoint-s3/deploy-sidecar.yaml` for how to.
+   Please don't forget defining startup probe to make sure fuse volume is actually mounted before app containers are started.
+
+### `subPath` volume mount requires sidecar
+
+When fuse container is a normal container (i.e. not a sidecar), `subPath` volume mount creation by kubelet can race with actual fuse process startup.
+This race might cause that mounted `subPath` volume could be empty. Thus, when you use `subPath` volume mount, you have to make fuse container be a sidecar container.
+See `examples/proxy/mountpoint-s3/deploy-sidecar.yaml` for how to.
 
 ## Running E2E tests
 ### Tested Environment
@@ -125,6 +139,10 @@ You can run E2E tests with kind.
 
 ```console
 $ make test-e2e
+
+# if you test subpath volume mount, you can set TEST_SUBPATH=true
+# you will need kubernetes v1.30 or later because this tests needs sidecar containers
+$ TEST_SUBPATH=true make test-e2e
 ```
 
 ## How it works?
