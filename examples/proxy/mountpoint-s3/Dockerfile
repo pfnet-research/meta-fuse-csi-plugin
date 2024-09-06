@@ -26,7 +26,7 @@ set -eux
 EOF
 RUN chmod +x /configure_minio.sh
 
-RUN wget https://s3.amazonaws.com/mountpoint-s3-release/latest/${TARGETARCH}/mount-s3.deb -O mount-s3.deb && dpkg -i mount-s3.deb
+RUN if [ "$TARGETARCH" = "amd64" ]; then TARGETARCH=x86_64; fi && wget https://s3.amazonaws.com/mountpoint-s3-release/latest/${TARGETARCH}/mount-s3.deb -O mount-s3.deb && dpkg -i mount-s3.deb
 
 COPY --from=fusermount3-proxy-builder /bin/fusermount3-proxy /bin/fusermount3
 RUN ln -sf /bin/fusermount3 /bin/fusermount
