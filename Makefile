@@ -15,7 +15,7 @@
 # limitations under the License.
 
 export STAGINGVERSION ?= $(shell git describe --long --tags --match='v*' --dirty 2>/dev/null || git rev-list -n1 HEAD)
-export BUILD_DATE ?= $(shell date --iso-8601=minutes)
+export BUILD_DATE ?= $(shell date +"%Y-%m-%dT%H:%M:%S%z")
 BINDIR ?= bin
 LDFLAGS ?= -s -w -X main.version=${STAGINGVERSION} -X main.builddate=${BUILD_DATE} -extldflags '-static'
 
@@ -33,7 +33,6 @@ ifneq ("$(shell docker buildx build --help | grep 'provenance')", "")
 DOCKER_BUILD_ARGS += --provenance=false
 endif
 
-ARCH = $(shell dpkg --print-architecture)
 BUILDX_BUILDER = mfcp-builder
 
 LOAD_TO_KIND ?= false
@@ -49,22 +48,22 @@ all: build-driver build-examples
 
 driver:
 	mkdir -p ${BINDIR}
-	CGO_ENABLED=0 GOOS=linux GOARCH=${ARCH} go build -ldflags "${LDFLAGS}" -o ${BINDIR}/${DRIVER_BINARY} cmd/csi_driver/main.go
+	CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o ${BINDIR}/${DRIVER_BINARY} cmd/csi_driver/main.go
 
 fuse-starter:
 	mkdir -p ${BINDIR}
-	CGO_ENABLED=0 GOOS=linux GOARCH=${ARCH} go build -ldflags "${LDFLAGS}" -o ${BINDIR}/${STARTER_BINARY} cmd/fuse_starter/main.go
+	CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o ${BINDIR}/${STARTER_BINARY} cmd/fuse_starter/main.go
 
 fusermount3-proxy:
 	mkdir -p ${BINDIR}
-	CGO_ENABLED=0 GOOS=linux GOARCH=${ARCH} go build -ldflags "${LDFLAGS}" -o ${BINDIR}/${FUSERMOUNT3PROXY_BINARY} cmd/fusermount3-proxy/main.go
+	CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}" -o ${BINDIR}/${FUSERMOUNT3PROXY_BINARY} cmd/fusermount3-proxy/main.go
 
 build-driver:
 	$(eval IMAGE_NAME := ${DRIVER_IMAGE}:${STAGINGVERSION})
 	docker buildx build --load ${DOCKER_BUILD_ARGS} ${DOCKER_CACHE_ARGS} \
 		--file ./cmd/csi_driver/Dockerfile \
 		--tag ${IMAGE_NAME} \
-		--platform linux/${ARCH} .
+		.
 	if [ "${LOAD_TO_KIND}" = "true" ]; then \
 		kind load docker-image ${IMAGE_NAME};\
 	fi
@@ -98,7 +97,7 @@ build-example-$(1)-$(2):
 	docker buildx build --load ${DOCKER_BUILD_ARGS} ${DOCKER_CACHE_ARGS} \
 		--file ./examples/$1/$2/Dockerfile \
 		--tag ${IMAGE_NAME} \
-		--platform linux/${ARCH} .
+		.
 	if [ "${LOAD_TO_KIND}" = "true" ]; then \
 		kind load docker-image ${IMAGE_NAME};\
 	fi
@@ -113,10 +112,6 @@ push-example-$(1)-$(2):
 		--platform linux/amd64,linux/arm64 .
 endef
 
-ifeq ("$(ARCH)", "arm64")
-$(eval $(call example-template,proxy,sshfs))
-$(eval $(call example-template,starter,sshfs))
-else
 $(eval $(call example-template,proxy,mountpoint-s3))
 $(eval $(call example-template,proxy,goofys))
 $(eval $(call example-template,proxy,s3fs))
@@ -125,7 +120,7 @@ $(eval $(call example-template,proxy,gcsfuse))
 $(eval $(call example-template,proxy,sshfs))
 $(eval $(call example-template,starter,ros3fs))
 $(eval $(call example-template,starter,sshfs))
-endif
+
 
 .PHONY: build-examples
 build-examples: $(BUILD_EXAMPLES)
@@ -145,10 +140,6 @@ test-example-$(1)-$(2):
 	./examples/check.sh ./$1/$2 mfcp-example-$1-$2 $3 $4 $5 $6
 endef
 
-ifeq ("$(ARCH)", "arm64")
-$(eval $(call test-example-template,proxy,sshfs,starter,/root/sshfs-example/test.txt,busybox,/data/test.txt))
-$(eval $(call test-example-template,starter,sshfs,starter,/root/sshfs-example/test.txt,busybox,/data/test.txt))
-else
 $(eval $(call test-example-template,proxy,mountpoint-s3,starter,/test.txt,busybox,/data/test.txt))
 $(eval $(call test-example-template,proxy,goofys,starter,/test.txt,busybox,/data/test.txt))
 $(eval $(call test-example-template,proxy,s3fs,starter,/test.txt,busybox,/data/test.txt))
@@ -156,7 +147,6 @@ $(eval $(call test-example-template,proxy,ros3fs,starter,/test.txt,busybox,/data
 $(eval $(call test-example-template,proxy,sshfs,starter,/root/sshfs-example/test.txt,busybox,/data/test.txt))
 $(eval $(call test-example-template,starter,ros3fs,starter,/test.txt,busybox,/data/test.txt))
 $(eval $(call test-example-template,starter,sshfs,starter,/root/sshfs-example/test.txt,busybox,/data/test.txt))
-endif
 
 .PHONY: test-examples
 test-examples: $(EXAMPLE_TESTS)
