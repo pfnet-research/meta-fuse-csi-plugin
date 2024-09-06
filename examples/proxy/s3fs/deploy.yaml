@@ -5,12 +5,14 @@ metadata:
   namespace: default
 spec:
   terminationGracePeriodSeconds: 10
-  containers:
+  initContainers:
   - name: minio
+    restartPolicy: Always
     image: quay.io/minio/minio:latest
     command: ["/bin/bash"]
     args: ["-c", "minio server /data --console-address :9090"]
   - name: starter
+    restartPolicy: Always
     image: ghcr.io/pfnet-research/meta-fuse-csi-plugin/mfcp-example-proxy-s3fs:latest
     imagePullPolicy: IfNotPresent
     command: ["/bin/bash"]
@@ -26,6 +28,16 @@ spec:
     volumeMounts:
     - name: fuse-fd-passing
       mountPath: /fusermount3-proxy
+    - name: fuse-csi-ephemeral
+      mountPath: /data
+      readOnly: true
+      mountPropagation: HostToContainer
+    startupProbe:
+      exec:
+        command: ['sh', '-c', 'mount | grep /data | grep fuse']
+      failureThreshold: 300
+      periodSeconds: 1
+  containers:
   - image: busybox
     name: busybox
     command: ["sleep"]
@@ -34,7 +46,12 @@ spec:
     - name: fuse-csi-ephemeral
       mountPath: /data
       readOnly: true
-      mountPropagation: HostToContainer # TODO: need to validate in csi driver?
+      mountPropagation: HostToContainer
+    - name: fuse-csi-ephemeral
+      mountPath: /data-subpath
+      readOnly: true
+      subPath: subdir
+      mountPropagation: HostToContainer
   volumes:
   - name: fuse-fd-passing
     emptyDir: {}

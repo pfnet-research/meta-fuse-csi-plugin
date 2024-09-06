@@ -12,13 +12,13 @@ function wait_for_fuse_mounted() {
     while [[ ! $(kubectl exec $1 -c $2 -- /bin/mount | grep fuse) ]]; do echo "waiting for mount" && sleep 1; done
 }
 
+MAFNIFEST_FILENAME=deploy.yaml
 MANIFEST_DIR=$1 # path to example manifest
-MAFNIFEST_FILENAME=$2
-POD_NAME=$3
-PROVIDER_CONTAINER=$4
-PROVIDED_FILENAME=$5
-MOUNTED_CONTAINER=$6
-MOUNTED_FILENAME=$7
+POD_NAME=$2
+PROVIDER_CONTAINER=$3
+PROVIDED_FILENAME=$4
+MOUNTED_CONTAINER=$5
+MOUNTED_FILENAME=$6
 
 clean_up () {
     ARG=$?
