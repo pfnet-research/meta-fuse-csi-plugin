@@ -97,7 +97,7 @@ build-example-$(1)-$(2):
 	docker buildx build --load ${DOCKER_BUILD_ARGS} ${DOCKER_CACHE_ARGS} \
 		--file ./examples/$1/$2/Dockerfile \
 		--tag ${IMAGE_NAME} \
-		--platform linux/${ARCH} .
+		.
 	if [ "${LOAD_TO_KIND}" = "true" ]; then \
 		kind load docker-image ${IMAGE_NAME};\
 	fi
