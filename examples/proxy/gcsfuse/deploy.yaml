@@ -5,7 +5,7 @@ metadata:
   namespace: csi-dev
 spec:
   terminationGracePeriodSeconds: 10
-  containers:
+  initContainers:
   - name: starter
     image: ghcr.io/pfnet-research/meta-fuse-csi-plugin/mfcp-example-proxy-gcsfuse:latest
     imagePullPolicy: IfNotPresent
@@ -19,6 +19,16 @@ spec:
       mountPath: /fusermount3-proxy
     - name: gcsfuse-temp
       mountPath: /gcsfuse-temp
+    - name: fuse-csi-ephemeral
+      mountPath: /data
+      readOnly: true
+      mountPropagation: HostToContainer
+    startupProbe:
+      exec:
+        command: ['sh', '-c', 'mount | grep /data | grep fuse']
+      failureThreshold: 300
+      periodSeconds: 1
+  containers:
   - image: busybox
     name: busybox
     command: ["sleep"]
@@ -27,7 +37,12 @@ spec:
     - name: fuse-csi-ephemeral
       mountPath: /data
       readOnly: true
-      mountPropagation: HostToContainer # TODO: need to validate in csi driver?
+      mountPropagation: HostToContainer
+    - name: fuse-csi-ephemeral
+      mountPath: /data-subpath
+      readOnly: true
+      subPath: subdir
+      mountPropagation: HostToContainer
   serviceAccountName: csi-dev-ksa
   volumes:
   - name: fuse-fd-passing
