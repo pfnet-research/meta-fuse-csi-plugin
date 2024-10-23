@@ -25,5 +25,5 @@ jobs:
         # buildkit requires $ACTIONS_CACHE_URL and $ACTIONS_RUNTIME_TOKEN for GHA build cache
       - name: publish image
         run: |
-          make build-driver
-          make build-examples
+          make push-driver
+          make push-examples
