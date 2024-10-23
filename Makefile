@@ -80,6 +80,7 @@ push-driver: init-buildx-driver
 		--tag ${DRIVER_IMAGE}:${STAGINGVERSION} \
 		--tag ${DRIVER_IMAGE}:latest \
 		--builder ${BUILDX_BUILDER} \
+		--push \
 		--platform linux/amd64,linux/arm64 .
 
 define example-template
@@ -109,6 +110,7 @@ push-example-$(1)-$(2):
 		--tag ${EXAMPLE_IMAGE}-$1-$2:${STAGINGVERSION} \
 		--tag ${EXAMPLE_IMAGE}-$1-$2:latest \
 		--builder ${BUILDX_BUILDER} \
+		--push \
 		--platform linux/amd64,linux/arm64 .
 endef
 
