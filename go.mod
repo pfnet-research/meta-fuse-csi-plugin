@@ -15,7 +15,7 @@ require (
 
 require (
 	github.com/go-logr/logr v1.2.4 // indirect
-	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/moby/sys/mountinfo v0.6.2 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
