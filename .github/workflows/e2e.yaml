@@ -11,9 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v1
+      - uses: docker/setup-buildx-action@v3
       - name: Expose GitHub Runtime
-        uses: crazy-max/ghaction-github-runtime@v2
+        uses: crazy-max/ghaction-github-runtime@v3
         # buildkit requires $ACTIONS_CACHE_URL and $ACTIONS_RUNTIME_TOKEN for GHA build cache
       - name: e2e-test
         run: |
