@@ -1,4 +1,4 @@
-FROM golang:1.20.7 as fusermount3-proxy-builder
+FROM golang:1.20.7 AS fusermount3-proxy-builder
 
 WORKDIR /meta-fuse-csi-plugin
 ADD . .

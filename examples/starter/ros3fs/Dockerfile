@@ -1,4 +1,4 @@
-FROM ubuntu:22.04 as ros3fs-builder
+FROM ubuntu:22.04 AS ros3fs-builder
 
 RUN apt update && apt upgrade -y
 RUN apt-get install -y cmake g++ git libfuse3-dev ninja-build zlib1g-dev libcurl4-openssl-dev libssl-dev ccache pkg-config
@@ -9,7 +9,7 @@ RUN ./build-aws-sdk-cpp.sh ./build
 RUN cmake -S . -B build
 RUN cmake --build build -- -j
 
-FROM golang:1.20.7 as fuse-starter-builder
+FROM golang:1.20.7 AS fuse-starter-builder
 
 WORKDIR /meta-fuse-csi-plugin
 ADD . .
